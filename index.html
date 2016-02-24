@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+<meta charset="utf-8">
+<title>DigiBoard</title>
+<link rel="stylesheet" type="text/css" href="css/style.css" media="screen">
+<script type="text/javascript" src="src/digiboard.js"></script>
+<script type="text/javascript">
+var digiboard;
+var tool;
+var color;
+var size;
+
+function init() {
+	display.addEventListener('mousedown', mousedown, false);
+	display.addEventListener('mousemove', mousemove, false);
+	display.addEventListener('mouseup', mouseup, false);
+	display.addEventListener('mouseenter', mouseenter, false);
+	display.addEventListener('mouseleave', mouseleave, false);
+	display.addEventListener('touchstart', touchstart, false);
+	display.addEventListener('touchmove', touchmove, false);
+	display.addEventListener('touchend', touchend, false);
+	selectedTool.addEventListener('click', toggleToolOptions, false);
+	selectedColor.addEventListener('click', toggleColorOptions, false);
+	selectedSize.addEventListener('click', toggleSizeOptions, false);
+	downloader.addEventListener('click', saveBoardToJpeg, false);
+	deleteBoard.addEventListener('click', clearBoardDrawings, false);
+	pen.addEventListener('click', selectTool, false);
+	eraser.addEventListener('click', selectTool, false);
+	white.addEventListener('click', selectColor, false);
+	red.addEventListener('click', selectColor, false);
+	green.addEventListener('click', selectColor, false);
+	blue.addEventListener('click', selectColor, false);
+	large.addEventListener('click', selectSize, false);
+	medium.addEventListener('click', selectSize, false);
+	small.addEventListener('click', selectSize, false);
+
+	digiboard = new DigiBoard(renderer);
+
+	selectedTool.getContext("2d").drawImage(pen, 0, 0, selectedTool.width, selectedTool.height);
+	selectedColor.getContext("2d").drawImage(white, 0, 0, selectedColor.width, selectedColor.height);
+	selectedSize.getContext("2d").drawImage(medium, 0, 0, selectedSize.width, selectedSize.height);
+
+	tool = "pen";
+	color = "white";
+	size = "medium";
+
+	resize();
+}
+
+function resize() {
+	var freeW = window.innerWidth - 120;
+	var freeH = window.innerHeight;
+
+	var digiboardAspect = renderer.width / renderer.height;
+	var freeAspect = freeW / freeH;
+	if (digiboardAspect < freeAspect) {
+		display.width = parseInt(freeH * digiboardAspect, 10);
+		display.height = freeH;
+	}
+	else {
+		display.width = freeW;
+		display.height = parseInt(freeW / digiboardAspect, 10);
+	}
+
+	display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
+}
+
+function mousedown(event) {
+	var rendererX = event.offsetX * (renderer.width / display.width);
+	var rendererY = event.offsetY * (renderer.height / display.height);
+
+	digiboard.mousepress(rendererX, rendererY);
+}
+
+function mousemove(event) {
+	var rendererX = event.offsetX * (renderer.width / display.width);
+	var rendererY = event.offsetY * (renderer.height / display.height);
+
+	digiboard.mousemove(rendererX, rendererY);
+
+	digiboard.render();
+	display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
+}
+
+function mouseup(event) {
+	digiboard.mouserelease();
+}
+
+function mouseenter(event) {
+	if (event.buttons === 1) {
+		var rendererX = event.offsetX * (renderer.width / display.width);
+		var rendererY = event.offsetY * (renderer.height / display.height);
+
+		digiboard.mousepress(rendererX, rendererY);
+	}
+}
+
+function mouseleave(event) {
+	var rendererX = event.offsetX * (renderer.width / display.width);
+	var rendererY = event.offsetY * (renderer.height / display.height);
+
+	digiboard.mousemove(rendererX, rendererY);
+
+	digiboard.render();
+	display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
+
+	digiboard.mouserelease();
+}
+
+function touchstart(event) {
+	var i;
+	var touches = event.changedTouches;
+	var rect = display.getBoundingClientRect();
+	for (i=0; i<touches.length; i++) {
+		var rendererX = (touches[i].clientX - rect.left) * (renderer.width / display.width);
+		var rendererY = (touches[i].clientY - rect.top) * (renderer.height / display.height);
+
+		digiboard.touchstart("touch" + touches[i].identifier, rendererX, rendererY);
+	}
+
+	event.preventDefault();
+}
+
+function touchmove(event) {
+	var i;
+	var touches = event.changedTouches;
+	var rect = display.getBoundingClientRect();
+	for (i=0; i<touches.length; i++) {
+		var rendererX = (touches[i].clientX - rect.left) * (renderer.width / display.width);
+		var rendererY = (touches[i].clientY - rect.top) * (renderer.height / display.height);
+
+		digiboard.touchmove("touch" + touches[i].identifier, rendererX, rendererY);
+	}
+
+	digiboard.render();
+	display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
+
+	event.preventDefault();
+}
+
+function touchend(event) {
+	var i;
+	var touches = event.changedTouches;
+	for (i=0; i<touches.length; i++) {
+		digiboard.touchend("touch" + touches[i].identifier);
+	}
+
+	event.preventDefault();
+}
+
+function toggleToolOptions(event) {
+	if (tools.style.display === "block") {
+		tools.style.display = "none";
+	}
+	else {
+		tools.style.display = "block";
+	}
+}
+
+function toggleColorOptions(event) {
+	if (colors.style.display === "block") {
+		colors.style.display = "none";
+	}
+	else {
+		colors.style.display = "block";
+	}
+}
+
+function toggleSizeOptions(event) {
+	if (sizes.style.display === "block") {
+		sizes.style.display = "none";
+	}
+	else {
+		sizes.style.display = "block";
+	}
+}
+
+function saveBoardToJpeg(event) {
+	downloader.href = renderer.toDataURL("image/jpeg", 0.85);
+	console.log(downloader.href);
+}
+
+function clearBoardDrawings(event) {
+	digiboard.clear();
+	digiboard.render();
+	display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
+}
+
+function selectTool(event) {
+	var ctx = selectedTool.getContext("2d");
+	ctx.clearRect(0, 0, selectedTool.width, selectedTool.height);
+	ctx.drawImage(event.target, 0, 0, selectedTool.width, selectedTool.height);
+	tools.style.display = "none";
+
+	tool = event.target.id;
+	if (tool === "pen") digiboard.updateColor(color);
+	else                digiboard.updateColor("black");
+}
+
+function selectColor(event) {
+	var ctx = selectedColor.getContext("2d");
+	ctx.clearRect(0, 0, selectedColor.width, selectedColor.height);
+	ctx.drawImage(event.target, 0, 0, selectedColor.width, selectedColor.height);
+	colors.style.display = "none";
+
+	color = event.target.id;
+
+	if (tool === "pen") digiboard.updateColor(color);
+}
+
+function selectSize(event) {
+	var ctx = selectedSize.getContext("2d");
+	ctx.clearRect(0, 0, selectedSize.width, selectedSize.height);
+	ctx.drawImage(event.target, 0, 0, selectedSize.width, selectedSize.height);
+	sizes.style.display = "none";
+
+	size = event.target.id;
+
+	digiboard.updateSize(size);
+}
+</script>
+</head>
+
+<body onload="init()" onresize="resize()">
+	<div id="gui">
+		<canvas id="selectedTool" width="176" height=176></canvas>
+		<canvas id="selectedColor" width="176" height="176"></canvas>
+		<canvas id="selectedSize" width="176" height="176"></canvas>
+		<a href="" id="downloader" download="digiboard.jpg">
+			<img id="downloadBoard" src="images/download.png" width="88" height="88">
+		</a>
+		<img id="deleteBoard" src="images/delete.png" width="88" height="88">
+	</div>
+	<canvas id="renderer" width="3840" height="2400"></canvas>
+	<canvas id="display" width="960" height="600"></canvas>
+	<div id="tools">
+		<img id="pen" class="options" src="images/draw.png" width="68" height="68">
+		<img id="eraser" class="options" src="images/erase.png" width="68" height="68">
+	</div>
+	<div id="colors">
+		<img id="white" class="options" src="images/white.png" width="68" height="68">
+		<img id="red" class="options" src="images/red.png" width="68" height="68">
+		<img id="green" class="options" src="images/green.png" width="68" height="68">
+		<img id="blue" class="options" src="images/blue.png" width="68" height="68">
+	</div>
+	<div id="sizes">
+		<img id="large" class="options" src="images/large.png" width="68" height="68">
+		<img id="medium" class="options" src="images/medium.png" width="68" height="68">
+		<img id="small" class="options" src="images/small.png" width="68" height="68">
+	</div>
+</body>
+</html>
