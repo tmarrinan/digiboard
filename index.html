@@ -10,6 +10,7 @@ var digiboard;
 var tool;
 var color;
 var size;
+var requiresRedraw;
 
 function init() {
 	display.addEventListener('mousedown', mousedown, false);
@@ -45,6 +46,9 @@ function init() {
 	color = "white";
 	size = "medium";
 
+	requiresRedraw = false;
+
+	requestAnimationFrame(refresh);
 	resize();
 }
 
@@ -79,8 +83,9 @@ function mousemove(event) {
 
 	digiboard.mousemove(rendererX, rendererY);
 
-	digiboard.render();
-	display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
+	requiresRedraw = true;
+	//digiboard.render();
+	//display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
 }
 
 function mouseup(event) {
@@ -102,8 +107,9 @@ function mouseleave(event) {
 
 	digiboard.mousemove(rendererX, rendererY);
 
-	digiboard.render();
-	display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
+	requiresRedraw = true;
+	//digiboard.render();
+	//display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
 
 	digiboard.mouserelease();
 }
@@ -133,8 +139,9 @@ function touchmove(event) {
 		digiboard.touchmove("touch" + touches[i].identifier, rendererX, rendererY);
 	}
 
-	digiboard.render();
-	display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
+	requiresRedraw = true;
+	//digiboard.render();
+	//display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
 
 	event.preventDefault();
 }
@@ -218,6 +225,16 @@ function selectSize(event) {
 	size = event.target.id;
 
 	digiboard.updateSize(size);
+}
+
+function refresh(timestamp) {
+	if (requiresRedraw === true) {
+		digiboard.render();
+		display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
+		requiresRedraw = false;
+	}
+
+	requestAnimationFrame(refresh);
 }
 </script>
 </head>
