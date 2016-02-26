@@ -84,12 +84,12 @@ function mousemove(event) {
 	digiboard.mousemove(rendererX, rendererY);
 
 	requiresRedraw = true;
-	//digiboard.render();
-	//display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
 }
 
 function mouseup(event) {
 	digiboard.mouserelease();
+
+	requiresRedraw = true;
 }
 
 function mouseenter(event) {
@@ -108,8 +108,6 @@ function mouseleave(event) {
 	digiboard.mousemove(rendererX, rendererY);
 
 	requiresRedraw = true;
-	//digiboard.render();
-	//display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
 
 	digiboard.mouserelease();
 }
@@ -140,8 +138,6 @@ function touchmove(event) {
 	}
 
 	requiresRedraw = true;
-	//digiboard.render();
-	//display.getContext("2d").drawImage(renderer, 0, 0, display.width, display.height);
 
 	event.preventDefault();
 }
@@ -152,6 +148,8 @@ function touchend(event) {
 	for (i=0; i<touches.length; i++) {
 		digiboard.touchend("touch" + touches[i].identifier);
 	}
+
+	requiresRedraw = true;
 
 	event.preventDefault();
 }
