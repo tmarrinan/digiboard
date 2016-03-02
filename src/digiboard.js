@@ -18,8 +18,7 @@
 function DigiBoard(canvas) {
 	this.ctx = canvas.getContext("2d");
 
-	this.error = 2.5;
-	this.steps = 6;
+	this.error = 7.5;
 	this.paths = [];
 	this.events = {mouse: -1};
 	this.bgcolor = "#111111";
@@ -44,9 +43,17 @@ DigiBoard.prototype.render = function() {
 		this.ctx.lineCap = "round";
 
 		this.ctx.beginPath();
-		this.ctx.moveTo(this.paths[i].path[0].x, this.paths[i].path[0].y);
-		for (j=1; j<this.paths[i].path.length; j++) {
-			this.ctx.lineTo(this.paths[i].path[j].x, this.paths[i].path[j].y);
+		if (this.paths[i].path.type === "line") {
+			this.ctx.moveTo(this.paths[i].path.points[0].x, this.paths[i].path.points[0].y);
+			for (j=1; j<this.paths[i].path.points.length; j++) {
+				this.ctx.lineTo(this.paths[i].path.points[j].x, this.paths[i].path.points[j].y);
+			}
+		}
+		else if (this.paths[i].path.type === "curve") {
+			this.ctx.moveTo(this.paths[i].path.points[0][0].x, this.paths[i].path.points[0][0].y);
+			for (j=0; j<this.paths[i].path.points.length; j++) {
+				this.ctx.bezierCurveTo(this.paths[i].path.points[j][1].x, this.paths[i].path.points[j][1].y, this.paths[i].path.points[j][2].x, this.paths[i].path.points[j][2].y, this.paths[i].path.points[j][3].x, this.paths[i].path.points[j][3].y);
+			}
 		}
 		this.ctx.stroke();
 	}
@@ -66,35 +73,27 @@ DigiBoard.prototype.clear = function() {
 };
 
 DigiBoard.prototype.simplifyPath = function(pathId) {
+	if (this.paths[pathId].path.type !== "line") return;
+
 	var i, j, t, px, py;
-	var cleanPath = [this.paths[pathId].path[0]];
-	for (i=1; i<this.paths[pathId].path.length; i++) {
-		if (!this.paths[pathId].path[i].isEqual(this.paths[pathId].path[i-1])) {
-			cleanPath.push(this.paths[pathId].path[i]);
+	var cleanPoints = [this.paths[pathId].path.points[0]];
+	for (i=1; i<this.paths[pathId].path.points.length; i++) {
+		if (!this.paths[pathId].path.points[i].isEqual(this.paths[pathId].path.points[i-1])) {
+			cleanPoints.push(this.paths[pathId].path.points[i]);
 		}
 	}
-	if (cleanPath.length == 1) {
-		cleanPath.push(cleanPath[0].add(new Vec2(-1, 1)));
-		this.paths[pathId].path = cleanPath;
+	if (cleanPoints.length == 1) {
+		cleanPoints.push(cleanPoints[0].add(new Vec2(-1, 1)));
+	}
+	if (cleanPoints.length <= 4) {
+		this.paths[pathId].path.points = cleanPoints;
 		return;
 	}
-	else if (cleanPath.length == 2) {
-		this.paths[pathId].path = cleanPath;
-		return;
-	}
-	var tan1 = cleanPath[1].subtract(cleanPath[0]).normalize();
-	var tan2 = cleanPath[cleanPath.length-2].subtract(cleanPath[cleanPath.length-1]).normalize();
-	var curves = this.fitCubic(cleanPath, 0, cleanPath.length-1, tan1, tan2);
-	var finalPath = [curves[0][0]];
-	for (i=0; i<curves.length; i++) {
-		for (j=1; j<this.steps; j++) {
-			t = j / (this.steps - 1);
-			px = (1 - t)*(1 - t)*(1 - t) * curves[i][0].x + 3*(1 - t)*(1 - t)*t * curves[i][1].x + 3*(1 - t)*t*t * curves[i][2].x + t*t*t * curves[i][3].x;
-			py = (1 - t)*(1 - t)*(1 - t) * curves[i][0].y + 3*(1 - t)*(1 - t)*t * curves[i][1].y + 3*(1 - t)*t*t * curves[i][2].y + t*t*t * curves[i][3].y;
-			finalPath.push(new Vec2(px, py));
-		}
-	}
-	this.paths[pathId].path = finalPath;
+	var tan1 = cleanPoints[1].subtract(cleanPoints[0]).normalize();
+	var tan2 = cleanPoints[cleanPoints.length-2].subtract(cleanPoints[cleanPoints.length-1]).normalize();
+	var curves = this.fitCubic(cleanPoints, 0, cleanPoints.length-1, tan1, tan2);
+	this.paths[pathId].path.type = "curve";
+	this.paths[pathId].path.points = curves;
 };
 
 DigiBoard.prototype.fitCubic = function(path, first, last, tan1, tan2) {
@@ -287,13 +286,13 @@ DigiBoard.prototype.findMaxError = function(path, first, last, curve, u) {
 };
 
 DigiBoard.prototype.mousepress = function(x, y) {
-	this.paths.push({color: this.currentColor, width: this.currentSize, path: [new Vec2(x, y)]});
+	this.paths.push({color: this.currentColor, width: this.currentSize, path: {type: "line", points: [new Vec2(x, y)]}});
 	this.events.mouse = this.paths.length - 1;
 };
 
 DigiBoard.prototype.mousemove = function(x, y) {
 	if (this.events.mouse >= 0) {
-		this.paths[this.events.mouse].path.push(new Vec2(x, y));
+		this.paths[this.events.mouse].path.points.push(new Vec2(x, y));
 	}
 };
 
@@ -305,13 +304,13 @@ DigiBoard.prototype.mouserelease = function() {
 };
 
 DigiBoard.prototype.touchstart = function(id, x, y) {
-	this.paths.push({color: this.currentColor, width: this.currentSize, path: [new Vec2(x, y)]});
+	this.paths.push({color: this.currentColor, width: this.currentSize, path: {type: "line", points: [new Vec2(x, y)]}});
 	this.events[id] = this.paths.length - 1;
 };
 
 DigiBoard.prototype.touchmove = function(id, x, y) {
 	if (this.events[id] !== undefined) {
-		this.paths[this.events[id]].path.push(new Vec2(x, y));
+		this.paths[this.events[id]].path.points.push(new Vec2(x, y));
 	}
 };
 
