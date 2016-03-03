@@ -15,17 +15,23 @@
  *                                                             *
  ***************************************************************/
 
-function DigiBoard(canvas) {
+function DigiBoard(canvas, close, fill, erase) {
 	this.ctx = canvas.getContext("2d");
 
 	this.error = 7.5;
 	this.paths = [];
-	this.events = {mouse: -1};
+	this.selections = [];
+	this.events = {draw: {mouse: -1}, selection: {mouse: -1}};
 	this.bgcolor = "#111111";
+	this.selectionColor = "#A8A8A8";
 	this.colors = {white: "#FFFFFF", red: "#BA1A35", green: "#38A525", blue: "#3052B5", black: this.bgcolor};
 	this.sizes = {large: 72, medium: 28, small: 10};
 	this.currentColor = this.colors.white;
 	this.currentSize = this.sizes.medium;
+	this.toolType = "pen";
+	this.closeImg = close;
+	this.fillImg = fill;
+	this.eraseImg = erase;
 
 	this.render();
 }
@@ -37,39 +43,86 @@ DigiBoard.prototype.render = function() {
 	this.ctx.fillStyle = this.bgcolor;
 	this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
+	// draw pen paths
+	this.ctx.lineCap = "round";
 	for (i=0; i<this.paths.length; i++) {
-		this.ctx.strokeStyle = this.paths[i].color;
-		this.ctx.lineWidth = this.paths[i].width;
-		this.ctx.lineCap = "round";
+		if (this.paths[i].type === "rect") {
+			this.ctx.fillStyle = this.paths[i].color;
+			this.ctx.fillRect(this.paths[i].left, this.paths[i].top, this.paths[i].width, this.paths[i].height);
+		}
 
-		this.ctx.beginPath();
-		if (this.paths[i].path.type === "line") {
-			this.ctx.moveTo(this.paths[i].path.points[0].x, this.paths[i].path.points[0].y);
-			for (j=1; j<this.paths[i].path.points.length; j++) {
-				this.ctx.lineTo(this.paths[i].path.points[j].x, this.paths[i].path.points[j].y);
+		else {
+			this.ctx.strokeStyle = this.paths[i].color;
+			this.ctx.lineWidth = this.paths[i].width;
+
+			this.ctx.beginPath();
+			if (this.paths[i].path.type === "line") {
+				this.ctx.moveTo(this.paths[i].path.points[0].x, this.paths[i].path.points[0].y);
+				for (j=1; j<this.paths[i].path.points.length; j++) {
+					this.ctx.lineTo(this.paths[i].path.points[j].x, this.paths[i].path.points[j].y);
+				}
 			}
-		}
-		else if (this.paths[i].path.type === "curve") {
-			this.ctx.moveTo(this.paths[i].path.points[0][0].x, this.paths[i].path.points[0][0].y);
-			for (j=0; j<this.paths[i].path.points.length; j++) {
-				this.ctx.bezierCurveTo(this.paths[i].path.points[j][1].x, this.paths[i].path.points[j][1].y, this.paths[i].path.points[j][2].x, this.paths[i].path.points[j][2].y, this.paths[i].path.points[j][3].x, this.paths[i].path.points[j][3].y);
+			else if (this.paths[i].path.type === "curve") {
+				this.ctx.moveTo(this.paths[i].path.points[0][0].x, this.paths[i].path.points[0][0].y);
+				for (j=0; j<this.paths[i].path.points.length; j++) {
+					this.ctx.bezierCurveTo(this.paths[i].path.points[j][1].x, this.paths[i].path.points[j][1].y, this.paths[i].path.points[j][2].x, this.paths[i].path.points[j][2].y, this.paths[i].path.points[j][3].x, this.paths[i].path.points[j][3].y);
+				}
 			}
+			this.ctx.stroke();
 		}
-		this.ctx.stroke();
 	}
+
+	// draw selection rectangles
+	this.ctx.setLineDash([48, 28]);
+	this.ctx.lineCap = "butt";
+	for (i=0; i<this.selections.length; i++) {
+		this.ctx.strokeStyle = this.selectionColor;
+		this.ctx.lineWidth = 10;
+		this.ctx.strokeRect(this.selections[i].left, this.selections[i].top, this.selections[i].width, this.selections[i].height);
+
+		var iconX = this.selections[i].left - 5;
+		var iconY = this.selections[i].top - 70;
+		if (this.selections[i].top < 70) { iconY += 76; iconX += 11; }
+
+		this.ctx.fillStyle = "#888888";
+		this.ctx.fillRect(iconX +   0, iconY, 64, 64);
+		this.ctx.fillRect(iconX +  70, iconY, 64, 64);
+		this.ctx.fillRect(iconX + 140, iconY, 64, 64);
+		this.ctx.drawImage(this.closeImg, iconX +   0, iconY, 64, 64);
+		this.ctx.drawImage(this.fillImg,  iconX +  70, iconY, 64, 64);
+		this.ctx.drawImage(this.eraseImg, iconX + 140, iconY, 64, 64);
+	}
+	this.ctx.setLineDash([]);
 };
 
 DigiBoard.prototype.updateColor = function(color) {
-	this.currentColor = this.colors[color]
+	this.currentColor = this.colors[color];
 };
 
 DigiBoard.prototype.updateSize = function(size) {
 	this.currentSize = this.sizes[size];
 };
 
+DigiBoard.prototype.setToolType = function(type) {
+	this.toolType = type;
+};
+
 DigiBoard.prototype.clear = function() {
 	this.paths = [];
-	this.events = {mouse: -1};
+	this.selections = [];
+	this.events = {draw: {mouse: -1}, selection: {mouse: -1}};
+};
+
+DigiBoard.prototype.closeSelection = function(index) {
+	this.selections.splice(index, 1);
+};
+
+DigiBoard.prototype.fillSelection = function(index) {
+	this.paths.push({type: "rect", color: this.currentColor, left: this.selections[index].left, top: this.selections[index].top, width: this.selections[index].width, height: this.selections[index].height});
+};
+
+DigiBoard.prototype.eraseSelection = function(index) {
+	this.paths.push({type: "rect", color: this.bgcolor, left: this.selections[index].left, top: this.selections[index].top, width: this.selections[index].width, height: this.selections[index].height});
 };
 
 DigiBoard.prototype.simplifyPath = function(pathId) {
@@ -286,38 +339,118 @@ DigiBoard.prototype.findMaxError = function(path, first, last, curve, u) {
 };
 
 DigiBoard.prototype.mousepress = function(x, y) {
-	this.paths.push({color: this.currentColor, width: this.currentSize, path: {type: "line", points: [new Vec2(x, y)]}});
-	this.events.mouse = this.paths.length - 1;
+	var i;
+	for (i=this.selections.length-1; i>=0; i--) {
+		var iconX = this.selections[i].left - 5;
+		var iconY = this.selections[i].top - 70;
+		if (this.selections[i].top < 70) { iconY += 76; iconX += 11; }
+
+		if (x >= iconX + 0 && x <= iconX + 64 && y >= iconY && y <= iconY + 64) {
+			this.closeSelection(i);
+			return;
+		}
+		else if (x >= iconX + 70 && x <= iconX + 134 && y >= iconY && y <= iconY + 64) {
+			this.fillSelection(i);
+			return;
+		}
+		else if (x >= iconX + 140 && x <= iconX + 204 && y >= iconY && y <= iconY + 64) {
+			this.eraseSelection(i);
+			return;
+		}
+	}
+
+	if (this.toolType === "pen") {
+		this.paths.push({color: this.currentColor, width: this.currentSize, path: {type: "line", points: [new Vec2(x, y)]}});
+		this.events.draw.mouse = this.paths.length - 1;
+	}
+	else if (this.toolType === "eraser") {
+		this.paths.push({color: this.bgcolor, width: this.currentSize, path: {type: "line", points: [new Vec2(x, y)]}});
+		this.events.draw.mouse = this.paths.length - 1;
+	}
+	else { // toolType === "selection"
+		this.selections.push({origin: new Vec2(x, y), left: x, top: y, width: 0, height: 0});
+		this.events.selection.mouse = this.selections.length - 1;
+	}
 };
 
 DigiBoard.prototype.mousemove = function(x, y) {
-	if (this.events.mouse >= 0) {
-		this.paths[this.events.mouse].path.points.push(new Vec2(x, y));
+	if (this.events.draw.mouse >= 0) {
+		this.paths[this.events.draw.mouse].path.points.push(new Vec2(x, y));
+	}
+	else if (this.events.selection.mouse >= 0) {
+		var origin = this.selections[this.events.selection.mouse].origin;
+		this.selections[this.events.selection.mouse].width = Math.abs(origin.x - x);
+		this.selections[this.events.selection.mouse].height = Math.abs(origin.y - y);
+		this.selections[this.events.selection.mouse].left = origin.x <= x ? origin.x : x;
+		this.selections[this.events.selection.mouse].top = origin.y <= y ? origin.y : y;
 	}
 };
 
 DigiBoard.prototype.mouserelease = function() {
-	if (this.events.mouse >= 0) {
-		this.simplifyPath(this.events.mouse);
-		this.events.mouse = -1;
+	if (this.events.draw.mouse >= 0) {
+		this.simplifyPath(this.events.draw.mouse);
+		this.events.draw.mouse = -1;
+	}
+	else if (this.events.selection.mouse >= 0) {
+		this.events.selection.mouse = -1;
 	}
 };
 
 DigiBoard.prototype.touchstart = function(id, x, y) {
-	this.paths.push({color: this.currentColor, width: this.currentSize, path: {type: "line", points: [new Vec2(x, y)]}});
-	this.events[id] = this.paths.length - 1;
+	var i;
+	for (i=this.selections.length-1; i>=0; i--) {
+		var iconX = this.selections[i].left - 5;
+		var iconY = this.selections[i].top - 54;
+		if (this.selections[i].top < 54) { iconY +=60; iconX += 11; }
+
+		if (x >= iconX + 0 && x <= iconX + 64 && y >= iconY && y <= iconY + 64) {
+			this.closeSelection(i);
+			return;
+		}
+		else if (x >= iconX + 70 && x <= iconX + 134 && y >= iconY && y <= iconY + 64) {
+			this.fillSelection(i);
+			return;
+		}
+		else if (x >= iconX + 140 && x <= iconX + 204 && y >= iconY && y <= iconY + 64) {
+			this.eraseSelection(i);
+			return;
+		}
+	}
+
+	if (this.toolType === "pen") {
+		this.paths.push({color: this.currentColor, width: this.currentSize, path: {type: "line", points: [new Vec2(x, y)]}});
+		this.events.draw[id] = this.paths.length - 1;
+	}
+	else if (this.toolType === "eraser") {
+		this.paths.push({color: this.bgcolor, width: this.currentSize, path: {type: "line", points: [new Vec2(x, y)]}});
+		this.events.draw[id] = this.paths.length - 1;
+	}
+	else { // toolType === "selection"
+		this.selections.push({origin: new Vec2(x, y), left: x, top: y, width: 0, height: 0});
+		this.events.selection[id] = this.selections.length - 1;
+	}
 };
 
 DigiBoard.prototype.touchmove = function(id, x, y) {
-	if (this.events[id] !== undefined) {
-		this.paths[this.events[id]].path.points.push(new Vec2(x, y));
+	if (this.events.draw[id] !== undefined) {
+		this.paths[this.events.draw[id]].path.points.push(new Vec2(x, y));
+	}
+	else if (this.events.selection[id] !== undefined) {
+		var origin = this.selections[this.events.selection[id]].origin;
+		this.selections[this.events.selection[id]].width = Math.abs(origin.x - x);
+		this.selections[this.events.selection[id]].height = Math.abs(origin.y - y);
+		this.selections[this.events.selection[id]].left = origin.x <= x ? origin.x : x;
+		this.selections[this.events.selection[id]].top = origin.y <= y ? origin.y : y;
 	}
 };
 
 DigiBoard.prototype.touchend = function(id) {
-	if (this.events[id] !== undefined) {
-		this.simplifyPath(this.events[id]);
-		delete this.events[id];
+	if (this.events.draw[id] !== undefined) {
+		this.simplifyPath(this.events.draw[id]);
+		delete this.events.draw[id];
+	}
+	else if (this.events.selection[id] >= 0) {
+		delete this.events.selection[id];
 	}
 };
 

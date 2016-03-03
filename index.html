@@ -29,6 +29,7 @@ function init() {
 	deleteBoard.addEventListener('click', clearBoardDrawings, false);
 	pen.addEventListener('click', selectTool, false);
 	eraser.addEventListener('click', selectTool, false);
+	selection.addEventListener('click', selectTool, false);
 	white.addEventListener('click', selectColor, false);
 	red.addEventListener('click', selectColor, false);
 	green.addEventListener('click', selectColor, false);
@@ -37,7 +38,7 @@ function init() {
 	medium.addEventListener('click', selectSize, false);
 	small.addEventListener('click', selectSize, false);
 
-	digiboard = new DigiBoard(renderer);
+	digiboard = new DigiBoard(renderer, closeImage, fillImage, eraseImage);
 
 	selectedTool.getContext("2d").drawImage(pen, 0, 0, selectedTool.width, selectedTool.height);
 	selectedColor.getContext("2d").drawImage(white, 0, 0, selectedColor.width, selectedColor.height);
@@ -200,8 +201,18 @@ function selectTool(event) {
 	tools.style.display = "none";
 
 	tool = event.target.id;
-	if (tool === "pen") digiboard.updateColor(color);
-	else                digiboard.updateColor("black");
+	digiboard.setToolType(event.target.id);
+	/*if (tool === "pen") {
+		digiboard.setToolType("pen");
+		digiboard.updateColor(color);
+	}
+	else if (tool === "eraser") {
+		digiboard.setToolType("draw");
+		digiboard.updateColor("black");
+	}
+	else { // tool === "selection"
+		digiboard.setToolType("selection");
+	}*/
 }
 
 function selectColor(event) {
@@ -212,7 +223,7 @@ function selectColor(event) {
 
 	color = event.target.id;
 
-	if (tool === "pen") digiboard.updateColor(color);
+	digiboard.updateColor(color);
 }
 
 function selectSize(event) {
@@ -253,6 +264,7 @@ function refresh(timestamp) {
 	<div id="tools">
 		<img id="pen" class="options" src="images/draw.png" width="68" height="68">
 		<img id="eraser" class="options" src="images/erase.png" width="68" height="68">
+		<img id="selection" class="options" src="images/select.png" width="68" height="68">
 	</div>
 	<div id="colors">
 		<img id="white" class="options" src="images/white.png" width="68" height="68">
@@ -265,5 +277,9 @@ function refresh(timestamp) {
 		<img id="medium" class="options" src="images/medium.png" width="68" height="68">
 		<img id="small" class="options" src="images/small.png" width="68" height="68">
 	</div>
+
+	<img id="closeImage" class="hidden" src="images/close.png">
+	<img id="fillImage" class="hidden" src="images/fill.png">
+	<img id="eraseImage" class="hidden" src="images/erase.png">
 </body>
 </html>
