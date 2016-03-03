@@ -77,7 +77,7 @@ DigiBoard.prototype.render = function() {
 	this.ctx.lineCap = "butt";
 	for (i=0; i<this.selections.length; i++) {
 		this.ctx.strokeStyle = this.selectionColor;
-		this.ctx.lineWidth = 10;
+		this.ctx.lineWidth = 8;
 		this.ctx.strokeRect(this.selections[i].left, this.selections[i].top, this.selections[i].width, this.selections[i].height);
 
 		var iconX = this.selections[i].left - 5;
@@ -122,7 +122,7 @@ DigiBoard.prototype.fillSelection = function(index) {
 };
 
 DigiBoard.prototype.eraseSelection = function(index) {
-	this.paths.push({type: "rect", color: this.bgcolor, left: this.selections[index].left, top: this.selections[index].top, width: this.selections[index].width, height: this.selections[index].height});
+	this.paths.push({type: "rect", color: this.bgcolor, left: this.selections[index].left-1, top: this.selections[index].top-1, width: this.selections[index].width+2, height: this.selections[index].height+2});
 };
 
 DigiBoard.prototype.simplifyPath = function(pathId) {
@@ -400,8 +400,8 @@ DigiBoard.prototype.touchstart = function(id, x, y) {
 	var i;
 	for (i=this.selections.length-1; i>=0; i--) {
 		var iconX = this.selections[i].left - 5;
-		var iconY = this.selections[i].top - 54;
-		if (this.selections[i].top < 54) { iconY +=60; iconX += 11; }
+		var iconY = this.selections[i].top - 70;
+		if (this.selections[i].top < 70) { iconY += 76; iconX += 11; }
 
 		if (x >= iconX + 0 && x <= iconX + 64 && y >= iconY && y <= iconY + 64) {
 			this.closeSelection(i);
