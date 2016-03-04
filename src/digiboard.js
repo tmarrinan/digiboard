@@ -392,6 +392,9 @@ DigiBoard.prototype.mouserelease = function() {
 		this.events.draw.mouse = -1;
 	}
 	else if (this.events.selection.mouse >= 0) {
+		if (this.selections[this.events.selection.mouse].width <= 8 && this.selections[this.events.selection.mouse].height <= 8) {
+			this.closeSelection(this.events.selection.mouse);
+		}
 		this.events.selection.mouse = -1;
 	}
 };
@@ -450,6 +453,9 @@ DigiBoard.prototype.touchend = function(id) {
 		delete this.events.draw[id];
 	}
 	else if (this.events.selection[id] >= 0) {
+		if (this.selections[this.events.selection[id]].width <= 8 && this.selections[this.events.selection[id]].height <= 8) {
+			this.closeSelection(this.events.selection[id]);
+		}
 		delete this.events.selection[id];
 	}
 };
