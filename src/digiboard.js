@@ -23,7 +23,6 @@ function DigiBoard(canvas, close, fill, erase) {
 	this.selections = [];
 	this.events = {draw: {mouse: -1}, selection: {mouse: -1}};
 	this.bgcolor = "#111111";
-	this.selectionColor = "#A8A8A8";
 	this.colors = {white: "#FFFFFF", red: "#BA1A35", green: "#38A525", blue: "#3052B5", black: this.bgcolor};
 	this.sizes = {large: 72, medium: 28, small: 10};
 	this.currentColor = this.colors.white;
@@ -76,9 +75,11 @@ DigiBoard.prototype.render = function() {
 	this.ctx.setLineDash([48, 28]);
 	this.ctx.lineCap = "butt";
 	for (i=0; i<this.selections.length; i++) {
-		this.ctx.strokeStyle = this.selectionColor;
+		this.ctx.strokeStyle = "#A8A8A8";
+		this.ctx.fillStyle = "rgba(168, 168, 168, 0.7)";
 		this.ctx.lineWidth = 8;
 		this.ctx.strokeRect(this.selections[i].left, this.selections[i].top, this.selections[i].width, this.selections[i].height);
+		this.ctx.fillRect(this.selections[i].left + this.selections[i].width - 60, this.selections[i].top + this.selections[i].height - 60, 64, 64);
 
 		var iconX = this.selections[i].left - 5;
 		var iconY = this.selections[i].top - 70;
@@ -361,9 +362,14 @@ DigiBoard.prototype.mousepress = function(x, y) {
 
 		// press inside selection box
 		if (x >= this.selections[i].left && x <= this.selections[i].left + this.selections[i].width && y >= this.selections[i].top && y <= this.selections[i].top + this.selections[i].height) {
-			this.selections[i].selected.mouse.move = true;
-			this.selections[i].selected.mouse.origin.x = x
-			this.selections[i].selected.mouse.origin.y = y;
+			if (x >= this.selections[i].left + this.selections[i].width - 60 && y >= this.selections[i].top + this.selections[i].height - 60) {
+				this.events.selection.mouse = i;
+			}
+			else {
+				this.selections[i].selected.mouse.move = true;
+				this.selections[i].selected.mouse.origin.x = x
+				this.selections[i].selected.mouse.origin.y = y;
+			}
 			return;
 		}
 	}
@@ -415,6 +421,8 @@ DigiBoard.prototype.mouserelease = function() {
 		this.events.draw.mouse = -1;
 	}
 	else if (this.events.selection.mouse >= 0) {
+		this.selections[this.events.selection.mouse].origin.x = this.selections[this.events.selection.mouse].left;
+		this.selections[this.events.selection.mouse].origin.y = this.selections[this.events.selection.mouse].top;
 		if (this.selections[this.events.selection.mouse].width <= 8 && this.selections[this.events.selection.mouse].height <= 8) {
 			this.closeSelection(this.events.selection.mouse);
 		}
@@ -424,6 +432,8 @@ DigiBoard.prototype.mouserelease = function() {
 		var i;
 		for (i=this.selections.length-1; i>=0; i--) {
 			if (this.selections[i].selected.mouse.move === true) {
+				this.selections[i].origin.x = this.selections[i].left;
+				this.selections[i].origin.y = this.selections[i].top;
 				this.selections[i].selected.mouse.move = false;
 			}
 		}
@@ -452,7 +462,12 @@ DigiBoard.prototype.touchstart = function(id, x, y) {
 
 		// press inside selection box
 		if (x >= this.selections[i].left && x <= this.selections[i].left + this.selections[i].width && y >= this.selections[i].top && y <= this.selections[i].top + this.selections[i].height) {
-			this.selections[i].selected[id] = {move: true, origin: new Vec2(x, y)};
+			if (x >= this.selections[i].left + this.selections[i].width - 60 && y >= this.selections[i].top + this.selections[i].height - 60) {
+				this.events.selection[id] = i;
+			}
+			else {
+				this.selections[i].selected[id] = {move: true, origin: new Vec2(x, y)};
+			}
 			return;
 		}
 	}
@@ -504,6 +519,8 @@ DigiBoard.prototype.touchend = function(id) {
 		delete this.events.draw[id];
 	}
 	else if (this.events.selection[id] >= 0) {
+		this.selections[this.events.selection[id]].origin.x = this.selections[this.events.selection[id]].left;
+		this.selections[this.events.selection[id]].origin.y = this.selections[this.events.selection[id]].top;
 		if (this.selections[this.events.selection[id]].width <= 8 && this.selections[this.events.selection[id]].height <= 8) {
 			this.closeSelection(this.events.selection[id]);
 		}
@@ -513,6 +530,8 @@ DigiBoard.prototype.touchend = function(id) {
 		var i;
 		for (i=this.selections.length-1; i>=0; i--) {
 			if (this.selections[i].selected[id] && this.selections[i].selected[id].move === true) {
+				this.selections[i].origin.x = this.selections[i].left;
+				this.selections[i].origin.y = this.selections[i].top;
 				this.selections[i].selected[id].move = false;
 				delete this.selections[i].selected[id];
 			}
