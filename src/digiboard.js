@@ -452,7 +452,7 @@ DigiBoard.prototype.touchstart = function(id, x, y) {
 
 		// press inside selection box
 		if (x >= this.selections[i].left && x <= this.selections[i].left + this.selections[i].width && y >= this.selections[i].top && y <= this.selections[i].top + this.selections[i].height) {
-			this.selections[i].selected[id] = {move: true, origin: {x: x, y: y}};
+			this.selections[i].selected[id] = {move: true, origin: new Vec2(x, y)};
 			return;
 		}
 	}
@@ -466,7 +466,7 @@ DigiBoard.prototype.touchstart = function(id, x, y) {
 		this.events.draw[id] = this.paths.length - 1;
 	}
 	else { // toolType === "selection"
-		this.selections.push({origin: new Vec2(x, y), left: x, top: y, width: 0, height: 0, selected: {mouse: false}});
+		this.selections.push({origin: new Vec2(x, y), left: x, top: y, width: 0, height: 0, selected: {mouse: {move: false, origin: new Vec2(0, 0)}}});
 		this.events.selection[id] = this.selections.length - 1;
 	}
 };
