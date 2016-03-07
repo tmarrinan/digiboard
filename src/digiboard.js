@@ -49,7 +49,6 @@ DigiBoard.prototype.render = function() {
 			this.ctx.fillStyle = this.paths[i].color;
 			this.ctx.fillRect(this.paths[i].left, this.paths[i].top, this.paths[i].width, this.paths[i].height);
 		}
-
 		else {
 			this.ctx.strokeStyle = this.paths[i].color;
 			this.ctx.lineWidth = this.paths[i].width;
@@ -74,6 +73,7 @@ DigiBoard.prototype.render = function() {
 	// draw selection rectangles
 	this.ctx.setLineDash([48, 28]);
 	this.ctx.lineCap = "butt";
+	var iconX, iconY;
 	for (i=0; i<this.selections.length; i++) {
 		this.ctx.strokeStyle = "#A8A8A8";
 		this.ctx.fillStyle = "rgba(168, 168, 168, 0.7)";
@@ -81,8 +81,8 @@ DigiBoard.prototype.render = function() {
 		this.ctx.strokeRect(this.selections[i].left, this.selections[i].top, this.selections[i].width, this.selections[i].height);
 		this.ctx.fillRect(this.selections[i].left + this.selections[i].width - 60, this.selections[i].top + this.selections[i].height - 60, 64, 64);
 
-		var iconX = this.selections[i].left - 5;
-		var iconY = this.selections[i].top - 70;
+		iconX = this.selections[i].left - 5;
+		iconY = this.selections[i].top - 70;
 		if (this.selections[i].top < 70) { iconY += 76; iconX += 11; }
 
 		this.ctx.fillStyle = "#888888";
@@ -341,9 +341,10 @@ DigiBoard.prototype.findMaxError = function(path, first, last, curve, u) {
 
 DigiBoard.prototype.mousepress = function(x, y) {
 	var i;
+	var iconX, iconY;
 	for (i=this.selections.length-1; i>=0; i--) {
-		var iconX = this.selections[i].left - 5;
-		var iconY = this.selections[i].top - 70;
+		iconX = this.selections[i].left - 5;
+		iconY = this.selections[i].top - 70;
 		if (this.selections[i].top < 70) { iconY += 76; iconX += 11; }
 
 		// click on button for selection box
@@ -442,9 +443,10 @@ DigiBoard.prototype.mouserelease = function() {
 
 DigiBoard.prototype.touchstart = function(id, x, y) {
 	var i;
+	var iconX, iconY;
 	for (i=this.selections.length-1; i>=0; i--) {
-		var iconX = this.selections[i].left - 5;
-		var iconY = this.selections[i].top - 70;
+		iconX = this.selections[i].left - 5;
+		iconY = this.selections[i].top - 70;
 		if (this.selections[i].top < 70) { iconY += 76; iconX += 11; }
 
 		if (x >= iconX + 0 && x <= iconX + 64 && y >= iconY && y <= iconY + 64) {
