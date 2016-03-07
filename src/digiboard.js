@@ -345,6 +345,7 @@ DigiBoard.prototype.mousepress = function(x, y) {
 		var iconY = this.selections[i].top - 70;
 		if (this.selections[i].top < 70) { iconY += 76; iconX += 11; }
 
+		// click on button for selection box
 		if (x >= iconX + 0 && x <= iconX + 64 && y >= iconY && y <= iconY + 64) {
 			this.closeSelection(i);
 			return;
@@ -355,6 +356,14 @@ DigiBoard.prototype.mousepress = function(x, y) {
 		}
 		else if (x >= iconX + 140 && x <= iconX + 204 && y >= iconY && y <= iconY + 64) {
 			this.eraseSelection(i);
+			return;
+		}
+
+		// press inside selection box
+		if (x >= this.selections[i].left && x <= this.selections[i].left + this.selections[i].width && y >= this.selections[i].top && y <= this.selections[i].top + this.selections[i].height) {
+			this.selections[i].selected.mouse.move = true;
+			this.selections[i].selected.mouse.origin.x = x
+			this.selections[i].selected.mouse.origin.y = y;
 			return;
 		}
 	}
@@ -368,7 +377,7 @@ DigiBoard.prototype.mousepress = function(x, y) {
 		this.events.draw.mouse = this.paths.length - 1;
 	}
 	else { // toolType === "selection"
-		this.selections.push({origin: new Vec2(x, y), left: x, top: y, width: 0, height: 0});
+		this.selections.push({origin: new Vec2(x, y), left: x, top: y, width: 0, height: 0, selected: {mouse: {move: false, origin: new Vec2(0, 0)}}});
 		this.events.selection.mouse = this.selections.length - 1;
 	}
 };
@@ -384,6 +393,20 @@ DigiBoard.prototype.mousemove = function(x, y) {
 		this.selections[this.events.selection.mouse].left = origin.x <= x ? origin.x : x;
 		this.selections[this.events.selection.mouse].top = origin.y <= y ? origin.y : y;
 	}
+	else {
+		var i;
+		for (i=this.selections.length-1; i>=0; i--) {
+			if (this.selections[i].selected.mouse.move === true) {
+				var translate = (new Vec2(x, y)).subtract(this.selections[i].selected.mouse.origin);
+
+				this.selections[i].left += translate.x;
+				this.selections[i].top += translate.y;
+
+				this.selections[i].selected.mouse.origin.x = x;
+				this.selections[i].selected.mouse.origin.y = y;
+			}
+		}
+	}
 };
 
 DigiBoard.prototype.mouserelease = function() {
@@ -396,6 +419,14 @@ DigiBoard.prototype.mouserelease = function() {
 			this.closeSelection(this.events.selection.mouse);
 		}
 		this.events.selection.mouse = -1;
+	}
+	else {
+		var i;
+		for (i=this.selections.length-1; i>=0; i--) {
+			if (this.selections[i].selected.mouse.move === true) {
+				this.selections[i].selected.mouse.move = false;
+			}
+		}
 	}
 };
 
@@ -418,6 +449,12 @@ DigiBoard.prototype.touchstart = function(id, x, y) {
 			this.eraseSelection(i);
 			return;
 		}
+
+		// press inside selection box
+		if (x >= this.selections[i].left && x <= this.selections[i].left + this.selections[i].width && y >= this.selections[i].top && y <= this.selections[i].top + this.selections[i].height) {
+			this.selections[i].selected[id] = {move: true, origin: {x: x, y: y}};
+			return;
+		}
 	}
 
 	if (this.toolType === "pen") {
@@ -429,7 +466,7 @@ DigiBoard.prototype.touchstart = function(id, x, y) {
 		this.events.draw[id] = this.paths.length - 1;
 	}
 	else { // toolType === "selection"
-		this.selections.push({origin: new Vec2(x, y), left: x, top: y, width: 0, height: 0});
+		this.selections.push({origin: new Vec2(x, y), left: x, top: y, width: 0, height: 0, selected: {mouse: false}});
 		this.events.selection[id] = this.selections.length - 1;
 	}
 };
@@ -445,6 +482,20 @@ DigiBoard.prototype.touchmove = function(id, x, y) {
 		this.selections[this.events.selection[id]].left = origin.x <= x ? origin.x : x;
 		this.selections[this.events.selection[id]].top = origin.y <= y ? origin.y : y;
 	}
+	else {
+		var i;
+		for (i=this.selections.length-1; i>=0; i--) {
+			if (this.selections[i].selected[id] && this.selections[i].selected[id].move === true) {
+				var translate = (new Vec2(x, y)).subtract(this.selections[i].selected[id].origin);
+
+				this.selections[i].left += translate.x;
+				this.selections[i].top += translate.y;
+
+				this.selections[i].selected[id].origin.x = x;
+				this.selections[i].selected[id].origin.y = y;
+			}
+		}
+	}
 };
 
 DigiBoard.prototype.touchend = function(id) {
@@ -457,6 +508,15 @@ DigiBoard.prototype.touchend = function(id) {
 			this.closeSelection(this.events.selection[id]);
 		}
 		delete this.events.selection[id];
+	}
+	else {
+		var i;
+		for (i=this.selections.length-1; i>=0; i--) {
+			if (this.selections[i].selected[id] && this.selections[i].selected[id].move === true) {
+				this.selections[i].selected[id].move = false;
+				delete this.selections[i].selected[id];
+			}
+		}
 	}
 };
 
